@@ -1,0 +1,21 @@
+node_modules
+dist
+.data
+.nitro
+.cache
+.output
+.env
+unimport.d.ts
+
+# Editor directories and files
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/*
+!.idea/biome.xml
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

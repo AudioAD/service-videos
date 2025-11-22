@@ -1,0 +1,275 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Education Videos Service API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "EducationVideo": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "url",
+          "order",
+          "available",
+          "viewed"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Video identifier"
+          },
+          "title": {
+            "type": "string",
+            "description": "Display name"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "url": {
+            "type": "string",
+            "description": "Absolute link to video asset"
+          },
+          "order": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "maximum": 60
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "description": "Video duration in seconds"
+          },
+          "unlock_date": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "viewed": {
+            "type": "boolean"
+          },
+          "viewed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "VideoViewedResponse": {
+        "type": "object",
+        "required": ["id", "viewed"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "viewed": {
+            "type": "boolean"
+          },
+          "viewed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "UploadEducationVideoRequest": {
+        "type": "object",
+        "required": ["title", "video"],
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Display title"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "unlockDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "video": {
+            "type": "string",
+            "format": "binary",
+            "description": "Video file"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "statusCode": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "accessToken"
+      }
+    }
+  },
+  "paths": {
+    "/education": {
+      "get": {
+        "tags": ["Education"],
+        "summary": "List videos",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "List of education videos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EducationVideo"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/education/{id}/viewed": {
+      "post": {
+        "tags": ["Education"],
+        "summary": "Mark video as viewed",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "View progress updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoViewedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Video not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/education/upload": {
+      "post": {
+        "tags": ["Education"],
+        "summary": "Upload a new education video",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadEducationVideoRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Video uploaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EducationVideo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
