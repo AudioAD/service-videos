@@ -16,7 +16,7 @@ export const resolveStaticAssetUrl = (rawUrl: string, baseOrigin: string) => {
 	}
 
 	const normalized = rawUrl.startsWith("/") ? rawUrl : `/${rawUrl}`;
-	return new URL(normalized, baseOrigin).toString();
+	return new URL(`/api/videos${normalized}`, baseOrigin).toString();
 };
 
 export const fetchPublicAssetBuffer = async (rawUrl?: string | null) => {

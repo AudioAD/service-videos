@@ -9,6 +9,10 @@ export default defineNitroConfig({
 	runtimeConfig: {
 		mongoUri: "mongodb://root:donotusemyrootpassword@localhost:27017/",
 		secret: "gurievcreative",
+		appUrl: "http://localhost:5555",
+		public: {
+			assetBaseUrl: "",
+		},
 	},
 	imports: {
 		imports: [
@@ -23,4 +27,5 @@ export default defineNitroConfig({
 		],
 		dirs: ["./server/utils", "./types"],
 	},
+	publicAssets: [],
 });

@@ -18,10 +18,13 @@ export default eventHandler(async (event) => {
 		});
 	}
 
+	const config = useRuntimeConfig();
 	const requestUrl = getRequestURL(event, {
 		xForwardedHost: true,
 		xForwardedProto: true,
 	});
+	const assetBaseUrl =
+		config.public?.assetBaseUrl || config.appUrl || requestUrl.origin;
 
 	const [videos, progress] = await Promise.all([
 		ModelEducationVideo.find().sort({ order: 1 }).lean(),
@@ -86,7 +89,7 @@ export default eventHandler(async (event) => {
 				id: video._id.toString(),
 				title: video.title,
 				description: video.description ?? undefined,
-				url: resolveStaticAssetUrl(video.url, requestUrl.origin),
+				url: resolveStaticAssetUrl(video.url, assetBaseUrl),
 				order: video.order,
 				durationSeconds: durationSeconds ?? undefined,
 				unlock_date: unlockDate,

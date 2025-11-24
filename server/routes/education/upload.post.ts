@@ -152,17 +152,20 @@ export default eventHandler(async (event) => {
 		durationSeconds,
 	});
 
+	const config = useRuntimeConfig();
 	const requestUrl = getRequestURL(event, {
 		xForwardedHost: true,
 		xForwardedProto: true,
 	});
+	const assetBaseUrl =
+		config.public?.assetBaseUrl || config.appUrl || requestUrl.origin;
 	const unlockDateValue = video.unlockDate ?? null;
 
 	return {
 		id: video._id.toString(),
 		title: video.title,
 		description: video.description ?? undefined,
-		url: resolveStaticAssetUrl(video.url, requestUrl.origin),
+		url: resolveStaticAssetUrl(video.url, assetBaseUrl),
 		order: video.order,
 		durationSeconds: video.durationSeconds ?? undefined,
 		unlock_date: unlockDateValue,
