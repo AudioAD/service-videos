@@ -1,6 +1,5 @@
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
-import { basename, join } from "pathe";
 import {
 	getRequestHeader,
 	getRouterParam,
@@ -8,6 +7,7 @@ import {
 	setResponseHeader,
 	setResponseStatus,
 } from "h3";
+import { basename, join } from "pathe";
 import { resolveMimeTypeFromUrl } from "~/utils/staticAssets";
 
 const PUBLIC_VIDEO_DIR = join(process.cwd(), "public", "education-videos");
@@ -22,7 +22,9 @@ const ensureSafeFileName = (raw?: string | null) => {
 };
 
 export default defineEventHandler(async (event) => {
-	const fileName = ensureSafeFileName(getRouterParam(event, "filename"));
+	const fileName = ensureSafeFileName(
+		getRouterParam(event, "filename", { decode: true }),
+	);
 
 	if (!fileName) {
 		console.warn("[education-videos] Invalid file name", {
@@ -94,7 +96,7 @@ export default defineEventHandler(async (event) => {
 			"Content-Range",
 			`bytes ${start}-${end}/${stats.size}`,
 		);
-		setResponseHeader(event, "Content-Length", chunkSize.toString());
+		setResponseHeader(event, "Content-Length", chunkSize);
 		setResponseHeader(event, "Content-Type", mimeType);
 
 		if (method === "HEAD") {
@@ -111,7 +113,7 @@ export default defineEventHandler(async (event) => {
 		return sendStream(event, stream);
 	}
 
-	setResponseHeader(event, "Content-Length", stats.size.toString());
+	setResponseHeader(event, "Content-Length", stats.size);
 	setResponseHeader(event, "Content-Type", mimeType);
 
 	if (method === "HEAD") {
