@@ -123,6 +123,20 @@
           }
         }
       },
+      "DeleteEducationVideoResponse": {
+        "type": "object",
+        "required": ["id", "deleted"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Deleted video identifier"
+          },
+          "deleted": {
+            "type": "boolean",
+            "description": "Deletion status"
+          }
+        }
+      },
       "UploadEducationVideoRequest": {
         "type": "object",
         "required": ["title", "video"],
@@ -259,6 +273,55 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/VideoViewedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Video not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/education/{id}": {
+      "delete": {
+        "tags": ["Education"],
+        "summary": "Delete education video",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Video deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteEducationVideoResponse"
                 }
               }
             }
