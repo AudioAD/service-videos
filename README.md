@@ -6,7 +6,7 @@ Service provides simple REST API for managing daily education video program. It 
 
 - `GET /api/education` — returns 60 videos for authorized user with `available`, `viewed`, `unlock_date`, `url`, `title`, etc.
 - `POST /api/education/:id/viewed` — marks that user watched selected video.
-- `POST /api/education/upload` — accepts `multipart/form-data` (`title`, optional `description`, optional `unlockDate`, and `video` file) and uploads the asset into `public/education-videos`, automatically assigning order, calculating duration, and creating DB entry.
+- `POST /api/education/upload` — accepts `multipart/form-data` (`title`, optional `description`, optional `unlockDay` to specify the user's program day for unlocking starting from day 0, optional `unlockDate` for legacy schedules, and the `video` file) and uploads the asset into `public/education-videos`, automatically assigning order, calculating duration, and creating DB entry.
 
 ## Development
 

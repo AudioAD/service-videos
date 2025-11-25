@@ -1,27 +1,77 @@
 import { addDays } from "date-fns";
 import type { HydratedDocument, InferSchemaType } from "mongoose";
 
+import resolveStartDate from "./resolveStartDate";
+
 type UserDocument = HydratedDocument<InferSchemaType<typeof schemaUser>>;
 type EducationVideoSchema = InferSchemaType<typeof schemaEducationVideo>;
+
+const PROGRAM_TIMEZONE = "Etc/UTC";
+
+const getMetaValue = (user: UserDocument, key: string) => {
+	const meta = user.meta as
+		| Map<string, unknown>
+		| Record<string, unknown>
+		| undefined;
+
+	if (!meta) {
+		return undefined;
+	}
+
+	if (typeof (meta as Map<string, unknown>).get === "function") {
+		return (meta as Map<string, unknown>).get(key);
+	}
+
+	return (meta as Record<string, unknown>)[key];
+};
+
+const parseDateValue = (value: unknown) => {
+	if (!value) {
+		return undefined;
+	}
+
+	if (value instanceof Date) {
+		return new Date(value);
+	}
+
+	const parsed = new Date(String(value));
+	return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+};
+
+const ensureProgramStart = (value?: Date) => {
+	if (!value) {
+		return undefined;
+	}
+
+	return resolveStartDate(value, PROGRAM_TIMEZONE, true);
+};
 
 export const resolveEducationStartDate = (user?: UserDocument | null) => {
 	if (!user) {
 		return undefined;
 	}
 
+	const metaProgramStart = parseDateValue(getMetaValue(user, "programStart"));
+	const programStartDate = ensureProgramStart(metaProgramStart);
+	if (programStartDate) {
+		return programStartDate;
+	}
+
 	if (user.educationStartDate) {
-		return new Date(user.educationStartDate);
+		return ensureProgramStart(new Date(user.educationStartDate));
 	}
 
-	const metaStartDate = user.meta?.get?.("educationStartDate");
-	if (metaStartDate) {
-		const parsedDate = new Date(metaStartDate);
-		if (!Number.isNaN(parsedDate.getTime())) {
-			return parsedDate;
-		}
+	const metaEducationStart = parseDateValue(
+		getMetaValue(user, "educationStartDate"),
+	);
+	const educationStartDate = ensureProgramStart(metaEducationStart);
+	if (educationStartDate) {
+		return educationStartDate;
 	}
 
-	return user.createdAt ?? undefined;
+	return ensureProgramStart(
+		user.createdAt ? new Date(user.createdAt) : undefined,
+	);
 };
 
 export const resolveVideoUnlockDate = (

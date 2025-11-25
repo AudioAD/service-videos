@@ -135,6 +135,12 @@
             "type": "string",
             "nullable": true
           },
+          "unlockDay": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0,
+            "description": "Program day (starting from 0) when the video unlocks for a user"
+          },
           "unlockDate": {
             "type": "string",
             "format": "date",

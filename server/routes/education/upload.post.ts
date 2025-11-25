@@ -7,6 +7,10 @@ import {
 	resolveExtensionFromMimeType,
 	resolveStaticAssetUrl,
 } from "~/utils/staticAssets";
+import {
+	resolveEducationStartDate,
+	resolveVideoUnlockDate,
+} from "~/utils/education";
 
 const PUBLIC_VIDEO_DIR = join(process.cwd(), "public", "education-videos");
 
@@ -36,6 +40,25 @@ const uploadPayloadSchema = z.object({
 				ctx.addIssue({
 					code: z.ZodIssueCode.custom,
 					message: "Invalid unlock date",
+				});
+				return z.NEVER;
+			}
+
+			return parsed;
+		}),
+	unlockDay: z
+		.string()
+		.optional()
+		.transform((value, ctx) => {
+			if (!value?.trim()) {
+				return undefined;
+			}
+
+			const parsed = Number.parseInt(value.trim(), 10);
+			if (!Number.isFinite(parsed) || parsed < 0) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					message: "Invalid unlock day",
 				});
 				return z.NEVER;
 			}
@@ -91,7 +114,7 @@ export default eventHandler(async (event) => {
 		});
 	}
 
-	const { title, description, unlockDate } = await zodValidateData(
+	const { title, description, unlockDate, unlockDay } = await zodValidateData(
 		fields,
 		uploadPayloadSchema.parse,
 	);
@@ -143,12 +166,16 @@ export default eventHandler(async (event) => {
 		});
 	}
 
+	const unlockDaysOffset =
+		typeof unlockDay === "number" ? Math.max(0, unlockDay) : null;
+
 	const video = await ModelEducationVideo.create({
 		title,
 		description,
 		order: nextOrder,
 		url: relativePath,
-		unlockDate,
+		unlockDate: unlockDaysOffset === null ? unlockDate : null,
+		unlockDaysOffset,
 		durationSeconds,
 	});
 
@@ -159,7 +186,9 @@ export default eventHandler(async (event) => {
 	});
 	const assetBaseUrl =
 		config.public?.assetBaseUrl || config.appUrl || requestUrl.origin;
-	const unlockDateValue = video.unlockDate ?? null;
+	const baseStartDate = resolveEducationStartDate(user);
+	const resolvedUnlockDate = resolveVideoUnlockDate(video, baseStartDate);
+	const unlockDateValue = resolvedUnlockDate ? new Date(resolvedUnlockDate) : null;
 
 	return {
 		id: video._id.toString(),
