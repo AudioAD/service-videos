@@ -1,5 +1,3 @@
-import { Types } from "mongoose";
-
 export type User = InferAggregateFromSchema<typeof schemaUser>;
 export type EducationVideo = InferAggregateFromSchema<
 	typeof schemaEducationVideo

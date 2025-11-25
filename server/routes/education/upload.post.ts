@@ -11,6 +11,7 @@ import {
 	resolveEducationStartDate,
 	resolveVideoUnlockDate,
 } from "~/utils/education";
+import { VIDEO_PERMISSIONS, assertUserPermission } from "~/utils/permissions";
 
 const PUBLIC_VIDEO_DIR = join(process.cwd(), "public", "education-videos");
 
@@ -77,6 +78,8 @@ export default eventHandler(async (event) => {
 			message: "Unable to resolve user from access token",
 		});
 	}
+
+	assertUserPermission(user, VIDEO_PERMISSIONS.upload);
 
 	const formData = await readMultipartFormData(event);
 
