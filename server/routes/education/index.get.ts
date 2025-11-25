@@ -1,4 +1,4 @@
-import { getRequestURL } from "h3";
+import { getQuery, getRequestURL } from "h3";
 import { resolveEducationStartDate, resolveVideoUnlockDate } from "~/utils/education";
 import {
 	fetchPublicAssetBuffer,
@@ -6,6 +6,33 @@ import {
 	resolveStaticAssetUrl,
 } from "~/utils/staticAssets";
 import { extractVideoDurationSeconds } from "~/utils/videoMetadata";
+
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 12;
+const MAX_LIMIT = 24;
+
+const resolveNumberParam = (
+	value: string | string[] | undefined,
+	fallback: number,
+	options?: { min?: number; max?: number },
+) => {
+	const normalized = Array.isArray(value) ? value[0] : value;
+	const parsed = Number.parseInt(normalized ?? "", 10);
+	if (!Number.isFinite(parsed)) {
+		return fallback;
+	}
+
+	const { min, max } = options || {};
+	let result = parsed;
+	if (typeof min === "number") {
+		result = Math.max(min, result);
+	}
+	if (typeof max === "number") {
+		result = Math.min(max, result);
+	}
+
+	return result;
+};
 
 export default eventHandler(async (event) => {
 	const user = await getUser(event);
@@ -25,13 +52,33 @@ export default eventHandler(async (event) => {
 	});
 	const assetBaseUrl =
 		config.public?.assetBaseUrl || config.appUrl || requestUrl.origin;
+	const query = getQuery(event);
+	const page = resolveNumberParam(query.page, DEFAULT_PAGE, { min: 1 });
+	const limit = resolveNumberParam(query.limit, DEFAULT_LIMIT, {
+		min: 1,
+		max: MAX_LIMIT,
+	});
+	const skip = (page - 1) * limit;
 
-	const [videos, progress] = await Promise.all([
-		ModelEducationVideo.find().sort({ order: 1 }).lean(),
-		ModelUserEducationProgress.find({ userId: user._id.toString() })
-			.select({ videoId: 1, viewedAt: 1, createdAt: 1 })
+	const [videos, totalVideos] = await Promise.all([
+		ModelEducationVideo.find()
+			.sort({ order: 1 })
+			.skip(skip)
+			.limit(limit)
 			.lean(),
+		ModelEducationVideo.countDocuments(),
 	]);
+
+	const videoIds = videos.map((video) => video._id);
+	const progress = videoIds.length
+		? await ModelUserEducationProgress.find({
+				userId: user._id.toString(),
+				videoId: { $in: videoIds },
+			})
+				.select({ videoId: 1, viewedAt: 1, createdAt: 1 })
+				.lean()
+		: [];
+
 	const progressMap = new Map(
 		progress.map((item) => [item.videoId.toString(), item]),
 	);
@@ -100,5 +147,14 @@ export default eventHandler(async (event) => {
 		}),
 	);
 
-	return enrichedVideos;
+	const hasMore = page * limit < totalVideos;
+
+	return {
+		items: enrichedVideos,
+		page,
+		limit,
+		total: totalVideos,
+		hasMore,
+		nextPage: hasMore ? page + 1 : null,
+	};
 });
