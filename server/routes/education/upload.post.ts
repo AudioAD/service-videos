@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { extname, join } from "pathe";
 import { getRequestURL, readMultipartFormData } from "h3";
+import { z } from "zod";
 import { extractVideoDurationSeconds } from "~/utils/videoMetadata";
 import {
 	resolveExtensionFromMimeType,
@@ -12,6 +13,7 @@ import {
 	resolveVideoUnlockDate,
 } from "~/utils/education";
 import { VIDEO_PERMISSIONS, assertUserPermission } from "~/utils/permissions";
+import zodValidateData from "~/utils/zodValidateData";
 
 const PUBLIC_VIDEO_DIR = join(process.cwd(), "public", "education-videos");
 

@@ -1,4 +1,8 @@
+import { getRouterParams } from "h3";
+import { z } from "zod";
 import { resolveEducationStartDate, resolveVideoUnlockDate } from "~/utils/education";
+import objectIdTransform from "~/utils/objectIdTransform";
+import zodValidateData from "~/utils/zodValidateData";
 
 const paramsSchema = z.object({
 	id: z.string().transform(objectIdTransform),

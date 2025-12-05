@@ -1,4 +1,5 @@
 import { getQuery, getRequestURL } from "h3";
+import { z } from "zod";
 import { resolveEducationStartDate, resolveVideoUnlockDate } from "~/utils/education";
 import {
 	fetchPublicAssetBuffer,
@@ -6,33 +7,31 @@ import {
 	resolveStaticAssetUrl,
 } from "~/utils/staticAssets";
 import { extractVideoDurationSeconds } from "~/utils/videoMetadata";
+import zodValidateData from "~/utils/zodValidateData";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 12;
 const MAX_LIMIT = 24;
 
-const resolveNumberParam = (
-	value: string | string[] | undefined,
-	fallback: number,
-	options?: { min?: number; max?: number },
-) => {
-	const normalized = Array.isArray(value) ? value[0] : value;
-	const parsed = Number.parseInt(normalized ?? "", 10);
-	if (!Number.isFinite(parsed)) {
-		return fallback;
-	}
-
-	const { min, max } = options || {};
-	let result = parsed;
-	if (typeof min === "number") {
-		result = Math.max(min, result);
-	}
-	if (typeof max === "number") {
-		result = Math.min(max, result);
-	}
-
-	return result;
-};
+const querySchema = z.object({
+	page: z
+		.string()
+		.optional()
+		.transform((value) => {
+			const parsed = Number.parseInt(value ?? "", 10);
+			return Number.isFinite(parsed) && parsed >= 1 ? parsed : DEFAULT_PAGE;
+		}),
+	limit: z
+		.string()
+		.optional()
+		.transform((value) => {
+			const parsed = Number.parseInt(value ?? "", 10);
+			if (!Number.isFinite(parsed) || parsed < 1) {
+				return DEFAULT_LIMIT;
+			}
+			return Math.min(parsed, MAX_LIMIT);
+		}),
+});
 
 export default eventHandler(async (event) => {
 	const user = await getUser(event);
@@ -53,11 +52,7 @@ export default eventHandler(async (event) => {
 	const assetBaseUrl =
 		config.public?.assetBaseUrl || config.appUrl || requestUrl.origin;
 	const query = getQuery(event);
-	const page = resolveNumberParam(query.page, DEFAULT_PAGE, { min: 1 });
-	const limit = resolveNumberParam(query.limit, DEFAULT_LIMIT, {
-		min: 1,
-		max: MAX_LIMIT,
-	});
+	const { page, limit } = await zodValidateData(query, querySchema.parse);
 	const skip = (page - 1) * limit;
 
 	const [videos, totalVideos] = await Promise.all([

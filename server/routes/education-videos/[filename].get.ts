@@ -2,41 +2,42 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import {
 	getRequestHeader,
-	getRouterParam,
+	getRouterParams,
 	sendStream,
 	setResponseHeader,
 	setResponseStatus,
 } from "h3";
 import { basename, join } from "pathe";
+import { z } from "zod";
 import { resolveMimeTypeFromUrl } from "~/utils/staticAssets";
+import zodValidateData from "~/utils/zodValidateData";
 
 const PUBLIC_VIDEO_DIR = join(process.cwd(), "public", "education-videos");
 
-const ensureSafeFileName = (raw?: string | null) => {
-	if (!raw) {
-		return null;
-	}
-
-	const normalized = basename(raw);
-	return normalized.includes("..") ? null : normalized;
-};
+const paramsSchema = z.object({
+	filename: z
+		.string()
+		.min(1, "Filename is required")
+		.transform((value) => {
+			const normalized = basename(value);
+			if (normalized.includes("..")) {
+				throw new z.ZodError([
+					{
+						code: z.ZodIssueCode.custom,
+						message: "Invalid file name",
+						path: ["filename"],
+					},
+				]);
+			}
+			return normalized;
+		}),
+});
 
 export default defineEventHandler(async (event) => {
-	const fileName = ensureSafeFileName(
-		getRouterParam(event, "filename", { decode: true }),
+	const { filename: fileName } = await zodValidateData(
+		getRouterParams(event),
+		paramsSchema.parse,
 	);
-
-	if (!fileName) {
-		console.warn("[education-videos] Invalid file name", {
-			path: getRouterParam(event, "filename"),
-			url: event.path,
-		});
-		throw createError({
-			statusCode: 400,
-			statusMessage: "Bad Request",
-			message: "Invalid file name",
-		});
-	}
 
 	const filePath = join(PUBLIC_VIDEO_DIR, fileName);
 	console.info("[education-videos] Incoming request", {

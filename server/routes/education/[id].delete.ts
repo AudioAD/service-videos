@@ -1,9 +1,16 @@
 import { rm } from "node:fs/promises";
-import { getRouterParam } from "h3";
 import { basename, join } from "pathe";
+import { getRouterParams } from "h3";
+import { z } from "zod";
 import { VIDEO_PERMISSIONS, assertUserPermission } from "~/utils/permissions";
+import objectIdTransform from "~/utils/objectIdTransform";
+import zodValidateData from "~/utils/zodValidateData";
 
 const PUBLIC_VIDEO_DIR = join(process.cwd(), "public", "education-videos");
+
+const paramsSchema = z.object({
+	id: z.string().transform(objectIdTransform),
+});
 
 export default eventHandler(async (event) => {
 	const user = await getUser(event);
@@ -18,17 +25,9 @@ export default eventHandler(async (event) => {
 
 	assertUserPermission(user, VIDEO_PERMISSIONS.delete);
 
-	const videoId = getRouterParam(event, "id");
+	const { id } = await zodValidateData(getRouterParams(event), paramsSchema.parse);
 
-	if (!videoId?.trim()) {
-		throw createError({
-			statusCode: 400,
-			statusMessage: "Bad Request",
-			message: "Video id is required",
-		});
-	}
-
-	const video = await ModelEducationVideo.findById(videoId).lean();
+	const video = await ModelEducationVideo.findById(id).lean();
 
 	if (!video) {
 		throw createError({
